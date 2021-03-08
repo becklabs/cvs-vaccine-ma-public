@@ -83,7 +83,6 @@ class CVSBot:
         self.callsign = colored('[CVSBot]', 'magenta') + ': '
         print(self.callsign + 'Initializing Bot')
         self.CVS_URL = 'https://www.cvs.com/immunizations/covid-19-vaccine?icid=cvs-home-hero1-link2-coronavirus-vaccine#'
-        self.TWEET_LINK = 'https://www.cvs.com/vaccine/intake/store/cvd-schedule.html?icid=coronavirus-lp-vaccine-sd-statetool'
         self.WAITINGROOM_URL = 'https://cvs.com/vaccine/intake/store/cvd-schedule.html?icid=coronavirus-lp-vaccine-sd-statetool'
         self.SCREENER_URL = 'https://www.cvs.com/vaccine/intake/store/covid-screener/covid-qns'
         self.MASS_BUTTON_XPATH = '//*[@id="empty-0d710bd9ab"]/content/div/div/div/div[3]/div/div/div[2]/div/div[5]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div/div/div/div[2]/ul/li[2]'
