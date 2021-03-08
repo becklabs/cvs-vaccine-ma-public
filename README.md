@@ -1,6 +1,6 @@
 # cvs-vaccine-mass
 ## Twitter Bot for CVS Vaccine Appointment Availability and Waiting Room Status in Massachusetts
-### Checks Location and Waiting Room Status on 4 sec intervals
+### Checks Location Data and Waiting Room Status on 4 sec intervals
 ## [Twitter Profile](http://www.twitter.com/MASS_VAX)
 
 ### Bot Console Log
