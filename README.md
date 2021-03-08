@@ -3,7 +3,7 @@
 ### Checks Location Data and Waiting Room Status on 4 sec intervals
 ### Running in The Cloud on Debian 10
 
-## [Twitter Profile](http://www.twitter.com/MASS_VAX)
+### [Twitter Profile](http://www.twitter.com/MASS_VAX)
 
 ### Screenshot of Bot Console Log
 ![botoutput](https://user-images.githubusercontent.com/55890162/110277887-28c07e00-7fa4-11eb-909f-ddee79c46cc6.jpg)
