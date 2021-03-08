@@ -7,127 +7,171 @@ import datetime
 import os
 import tweepy
 import sys
+import json
 
 class Tweeter:
-    def __init__(self):
-        API_KEY = 'API_KEY'
-        API_SECRET = 'API_SECRET'
-        ACCESS_TOKEN = 'ACCESS_TOKEN'
-        ACCESS_SECRET = 'ACCESS_SECRET'
-        
+    def __init__(self, STRINGVARS):
+        API_KEY = STRINGVARS['API_KEY']
+        API_SECRET = STRINGVARS['API_SECRET']
+        ACCESS_TOKEN = STRINGVARS['ACCESS_TOKEN']
+        ACCESS_SECRET = STRINGVARS['ACCESS_SECRET']
+
         auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
         auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
-        
+
         self.api = tweepy.API(auth)
-        self.callsign = colored('[Tweeter]','cyan')+': '
-        
+        self.callsign = colored('[Tweeter]', 'cyan') + ': '
+
     def tweet(self, tweet):
+        self.save(tweet)
         try:
-            self.api.update_status(tweet)
-            print(self.callsign+'Tweeted: '+tweet)
-            return True
+            with open('temp.txt', 'r') as f:
+                self.api.update_status(f.read())
+            print(self.callsign + 'Tweeted: ' + tweet)
+
         except tweepy.TweepError as e:
-            print(self.callsign+e)
-            return False
-        
+            print(self.callsign + e)
+
+    def reply(self, tweet, tweet_id):
+        self.save(tweet)
+        try:
+            with open('temp.txt', 'r') as f:
+                self.api.update_status(status=f.read(
+                ), in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
+                print(self.callsign + 'Tweeted: ' + tweet)
+        except tweepy.TweepError as e:
+            print(self.callsign + e)
+
     def last_tweet_id(self):
         return self.api.user_timeline()[0].id
-    
+
     def last_tweet_text(self):
         return self.api.user_timeline()[0].text
-        
-        
+
+
 class CVSBot:
-    def __init__(self):
-        self.callsign = colored('[CVSBot]','magenta')+': '
-        print(self.callsign+'Initializing Bot')
-        self.CVS_URL = 'https://www.cvs.com/immunizations/covid-19-vaccine?icid=cvs-home-hero1-link2-coronavirus-vaccine#'
-        self.TWEET_LINK = 'https://www.cvs.com/vaccine/intake/store/cvd-schedule.html?icid=coronavirus-lp-vaccine-sd-statetool'
-        self.MASS_BUTTON_XPATH = '//*[@id="empty-0d710bd9ab"]/content/div/div/div/div[3]/div/div/div[2]/div/div[5]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div/div/div/div[2]/ul/li[2]'
-        self.UPDATE_TS_XPATH = '//*[@id="vaccineinfo-MA"]/div/div/div/div[1]/div[2]/div/div/div[2]/div/div[5]/div'
-        self.CITIES_XPATH = '//*[@id="vaccineinfo-MA"]/div/div/div/div[1]/div[2]/div/div/div[2]/div/div[6]/div/div/table/tbody/tr/td[1]'
-        self.STATUSES_XPATH = '//*[@id="vaccineinfo-MA"]/div/div/div/div[1]/div[2]/div/div/div[2]/div/div[6]/div/div/table/tbody/tr/td[2]'
-        self.FEEDBACK_BUTTON_XPATH = '//*[@id="acsMainInvite"]/div/a[1]'
-        self.callsign = colored('[CVSBot]','magenta')+': '
-        saved_state = self.get_saved_state()
-        if saved_state:
-            self.last_update = self.saved_state.last_update
-            self.old_data = self.saved_state.old_data
-            self.then = self.saved_state.then
-            self.available_locations = self.saved_state.available_locations
-        else:
-            self.last_update = None
-            self.old_data = None
-            self.then = None
-            self.available_locations = []
-        self.Tweeter = Tweeter()
-        self.driver = webdriver.Chrome() 
-        self.driver.set_window_position(-2000,0)
-        self.driver.get(self.CVS_URL)
-        print(self.callsign+'Initialized')
-        
+    def __init__(self, STRINGVARS):
+        self.callsign = colored('[CVSBot]', 'magenta') + ': '
+        print(self.callsign + 'Initializing Bot')
+        self.CVS_URL = STRINGVARS['CVS_URL']
+        self.WAITINGROOM_URL = STRINGVARS['WAITINGROOM_URL']
+        self.SCREENER_URL = STRINGVARS['SCREENER_URL']
+        self.TWEET_LINK = STRINGVARS['TWEET_LINK']
+        self.MASS_BUTTON_XPATH = STRINGVARS['MASS_BUTTON_XPATH']
+        self.UPDATE_TS_XPATH = STRINGVARS['UPDATE_TS_XPATH']
+        self.CITIES_XPATH = STRINGVARS['CITIES_XPATH']
+        self.STATUSES_XPATH = STRINGVARS['STATUSES_XPATH']
+        self.FEEDBACK_BUTTON_XPATH = ['FEEDBACK_BUTTON_XPATH']
+        print(type(self.FEEDBACK_BUTTON_XPATH))
+        self.callsign = colored('[CVSBot]', 'magenta') + ': '
+        self.last_update = None
+        self.old_data = None
+        self.then = None
+        self.old_waitingroom_status = None
+        self.available_locations = []
+        self.Tweeter = Tweeter(STRINGVARS)
+        self.tweets = {}
+        self.driver = webdriver.Chrome()
+        self.driver.set_window_position(-2000, 0)
+        print(self.callsign + 'Initialized')
+
     def update(self):
+        self.driver.get(self.CVS_URL)
         self.now = datetime.datetime.now().strftime("%I:%M %p")
         if self.now != self.then:
-            print(self.callsign+'Updating ('+self.now+')')
+            print(self.callsign + 'Updating (' + self.now + ')')
         self.then = self.now
-        sys.stdout.flush()
         try:
             self.driver.find_element_by_xpath(self.MASS_BUTTON_XPATH).click()
-        except ElementClickInterceptedException: # Deal with feedback box
+        
+        except ElementClickInterceptedException:  # Deal with feedback box
             self.driver.find_element_by_xpath(self.FEEDBACK_BUTTON_XPATH).click()
             self.driver.find_element_by_xpath(self.MASS_BUTTON_XPATH).click()
         time.sleep(1)
-        
-        #Check Timestamp of Last update
+
+        # Check Timestamp of Last update
         self.new_update = self.driver.find_element_by_xpath(self.UPDATE_TS_XPATH).text.split('.')[0][13:]
-        if self.new_update != self.last_update: #Found update, Initial path
+        if self.new_update != self.last_update:  # Found update, Initial path
             self.last_update = self.new_update
-            print(self.callsign+colored('Found New Update @'+self.last_update, 'yellow'))
-            print(self.callsign+colored('Checking For Availability', 'yellow'))
-        
-            self.cities  = list(map(lambda el: el.text, self.driver.find_elements_by_xpath(self.CITIES_XPATH)))
+            print(self.callsign + colored('Found New Update @' +self.last_update, 'yellow'))
+            print(self.callsign + colored('Checking For Availability', 'yellow'))
+
+            self.cities = list(map(lambda el: el.text, self.driver.find_elements_by_xpath(self.CITIES_XPATH)))
             self.statuses = list(map(lambda el: el.text, self.driver.find_elements_by_xpath(self.STATUSES_XPATH)))
             self.new_data = dict(zip(self.cities, self.statuses))
             self.check_availability()
-            if self.new_data == self.old_data: #No change in data
-                print(self.callsign+colored('No Change In Availability', 'red'))
-            
-            if self.new_data != self.old_data: #Change in data
+            if self.new_data == self.old_data:  # No change in data
+                print(self.callsign + colored('No Change In Availability', 'red'))
+
+            if self.new_data != self.old_data and self.old_data != None:  # Change in data
                 self.old_data = self.new_data
                 if len(self.available_locations) == 0:
-                    print(self.callsign+colored('No Availability', 'red'))
+                    print(self.callsign + colored('No Availability', 'red'))
             if len(self.available_locations) > 0:
                 self.tweet_available_locations()
-                
+
+        self.driver.get(self.WAITINGROOM_URL)
+        self.waitingroom_status = self.driver.current_url != self.SCREENER_URL
+        if self.waitingroom_status != self.old_waitingroom_status:
+            self.tweet_waitingroom_status()
+        self.old_waitingroom_status = self.waitingroom_status
+
+    def tweet_waitingroom_status(self):
+        if self.waitingroom_status:
+            print('Waiting Room Is Now ENABLED: ' + self.WAITINGROOM_URL)
+        else:
+            print('Waiting Room Is Now DISABLED')
 
     def tweet_available_locations(self):
-        if len(self.available_locations) <= 8:
-            message = 'Available location(s): '+",".join(self.available_locations)+' (as of '+self.last_update+'); '+self.TWEET_LINK
-        if len(self.available_locations) > 8:   
-            message = '('+str(len(self.available_locations))+')'+'Available locations (as of '+self.last_update+'); '+self.TWEET_LINK
-        tweet_success = self.Tweeter.tweet(message)
-        if tweet_success:
-            curr_tweet = self.Tweeter.last_tweet_id()
-            self.tweets[curr_tweet] = self.available_locations.copy()
+        if len(self.available_locations) == 1:
+            message = 'Available Location: \n' + self.available_locations[0] + '\n(as of' + self.last_update + ')'
+        else:
+            msg_bodies = []
+            msg_body = ''
+            for i in range(len(self.available_locations)):
+                next_line = '\n' + self.available_locations[i]
+                if len(msg_body + next_line) < 230:
+                    msg_body += next_line
+                    continue
+                else:
+                    msg_bodies.append(msg_body)
+                    msg_body = ''
+    
+            if len(msg_bodies) == 1:
+                message = 'Available Locations: ' + msg_bodies[0] + '\n(as of' + self.last_update + ')'
+            else:
+                first_msg = 'Available Locations: ' + msg_bodies[0] + '\n(as of' + self.last_update + ')' + '\n(1/' + str(len(msg_bodies)) + ')'
+                aux_bodies = msg_bodies[2:]
+                self.Tweeter.tweet(first_msg)
+                first_msg_id = self.Tweeter.last_tweet_id()
+                for body in aux_bodies:
+                    message = 'Available Locations: ' + body + '\n(as of' + self.last_update + ')' + '\n('+str(aux_bodies.index(body))+'/' + str(len(msg_bodies)) + ')'
+                    self.Tweeter.reply(message, first_msg_id)
 
     def check_availability(self):
         self.old_available_locations = self.available_locations
         self.available_locations = []
         for i in self.new_data:
             if self.new_data[i] == 'Available':
-                self.available_locations.append(i)
+                self.available_locations.append(i.split(',')[0])
                 if i not in self.old_available_locations:
-                    print(self.callsign+i+'Is Now '+colored('AVAILABLE','green')+' as of '+self.new_update)
+                    print(self.callsign + i + 'Is Now ' + colored('AVAILABLE','green') + ' as of ' + self.new_update)
         for i in self.old_available_locations:
             if i not in self.available_locations:
-                print(self.callsign+i+'Is Now '+colored('UNAVAILABLE','green')+' as of '+self.new_update)
-        
+                print(self.callsign + i + 'Is Now ' + colored('UNAVAILABLE','green') + ' as of ' + self.new_update)
+
+    def save(message):
+        with open('temp.txt', 'w') as f:
+            f.write(message)
+
+
 def run(event=None, context=None):
     running = True
-    bot = CVSBot()
-    while running:  
+    with open('STRINGVARS.json') as f:
+        STRINGVARS = json.load(f)
+    print(STRINGVARS)
+    bot = CVSBot(STRINGVARS)
+    while running:
         bot.update()
         time.sleep(3)
-        bot.driver.refresh()
 run()
