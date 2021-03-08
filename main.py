@@ -163,7 +163,7 @@ class CVSBot:
         else:
             print(self.callsign + colored('Waiting Room Is Now DISABLEED', 'red'))
             message = 'Waiting Room Is Now DISABLED'+' (as of '+self.last_update+') '+self.WAITINGROOM_URL
-            self.Tweeter.tweet(message)
+            self.tweeter.tweet(message)
 
     def tweet_available_locations(self):
         if len(self.available_locations) == 1:
