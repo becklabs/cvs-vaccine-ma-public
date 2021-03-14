@@ -1,7 +1,7 @@
 ## Twitter Bot for CVS Vaccine Appointment Availability and Waiting Room Status in Massachusetts
-  * Checks Location Data and Waiting Room Status on 3 sec intervals
+  * Checks Location Data and Waiting Room Status on 2 sec intervals
   * Running in The Cloud on Debian 10
-  * Tweepy & Selenium
+  * Tweepy & Requests
 ### [Twitter Profile](http://www.twitter.com/MASS_VAX)
 
 ## Screenshot of Bot Console Log
